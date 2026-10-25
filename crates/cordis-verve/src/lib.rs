@@ -13,6 +13,7 @@
 mod cx;
 mod host;
 mod ops;
+mod rust;
 
 use std::rc::Rc;
 
@@ -21,6 +22,7 @@ use boa_engine::object::JsObject;
 use boa_engine::{Context, JsResult, JsString, JsSymbol, JsValue, Source, js_string};
 
 pub use host::{JsHost, JsKey};
+pub use rust::{Ctx, RustPlugin, define_plugin, plugin_object};
 
 use crate::host::Statics;
 
