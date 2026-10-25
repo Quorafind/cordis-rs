@@ -28,6 +28,8 @@ impl Drop for Guard {
 
 /// Runs `f` with `context` recorded as the one the engine reaches.
 pub(crate) fn enter<R>(context: &mut Context, f: impl FnOnce() -> R) -> R {
+    // What the last collection freed out from under native code is dropped now, outside it.
+    crate::sweep::bury();
     STACK.with(|stack| stack.borrow_mut().push(context as *mut Context));
     let _guard = Guard;
     let result = f();

@@ -122,6 +122,7 @@ impl<H: Host> FiberInner<H> {
         inject: Vec<(String, Option<H::Value>)>,
         runtime: Option<Runtime<H>>,
     ) -> Self {
+        crate::stats::add(&crate::stats::FIBERS, 1);
         Self {
             root,
             parent,
@@ -142,6 +143,12 @@ impl<H: Host> FiberInner<H> {
             dispose: RefCell::new(None),
             face: RefCell::new(None),
         }
+    }
+}
+
+impl<H: Host> Drop for FiberInner<H> {
+    fn drop(&mut self) {
+        crate::stats::add(&crate::stats::FIBERS, -1);
     }
 }
 
@@ -755,6 +762,7 @@ impl<H: Host> Fiber<H> {
 
     /// Lets go of what ties it to the host once it is disposed for good.
     fn release(&self) {
+        crate::stats::add(&crate::stats::RELEASED, 1);
         *self.inner.ctx.borrow_mut() = None;
         *self.inner.face.borrow_mut() = None;
         self.inner.checked.borrow_mut().clear();

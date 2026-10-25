@@ -20,6 +20,7 @@ use cordis::task::{Deferred, LocalBoxFuture, Scope, Task};
 use cordis::{Disposer, Effect, Fiber, Runtime};
 
 use crate::cx;
+use crate::sweep::SweepSafe;
 
 /// The private symbols the engine and `cordis.js` share, and what is fetched once.
 pub(crate) struct Statics {
@@ -56,18 +57,25 @@ impl JsKey {
     }
 }
 
-/// Native objects carried by faces.
-#[derive(Trace, Finalize, boa_engine::JsData)]
-pub(crate) struct RootHandle(#[unsafe_ignore_trace] pub(crate) cordis::Root<JsHost>);
+/// Native objects carried by faces. What they hold is dropped when the collector frees them,
+/// so it is sweep-safe (see [`crate::sweep`]).
+macro_rules! handle {
+    ($name:ident, $inner:ty) => {
+        #[derive(Trace, Finalize, boa_engine::JsData)]
+        pub(crate) struct $name(#[unsafe_ignore_trace] pub(crate) SweepSafe<$inner>);
 
-#[derive(Trace, Finalize, boa_engine::JsData)]
-pub(crate) struct FiberHandle(#[unsafe_ignore_trace] pub(crate) Fiber<JsHost>);
+        impl $name {
+            pub(crate) fn new(value: $inner) -> Self {
+                Self(SweepSafe::new(value))
+            }
+        }
+    };
+}
 
-#[derive(Trace, Finalize, boa_engine::JsData)]
-pub(crate) struct EffectHandle(#[unsafe_ignore_trace] pub(crate) Effect<JsHost>);
-
-#[derive(Trace, Finalize, boa_engine::JsData)]
-pub(crate) struct RuntimeHandle(#[unsafe_ignore_trace] pub(crate) Runtime<JsHost>);
+handle!(RootHandle, cordis::Root<JsHost>);
+handle!(FiberHandle, Fiber<JsHost>);
+handle!(EffectHandle, Effect<JsHost>);
+handle!(RuntimeHandle, Runtime<JsHost>);
 
 /// The host of one context tree.
 pub struct JsHost {
@@ -87,12 +95,14 @@ pub(crate) fn make_fn(
     length: usize,
     f: impl Fn(&JsValue, &[JsValue]) -> JsResult<JsValue> + 'static,
 ) -> JsObject {
+    // The captures are dropped when the function object is freed, during a sweep: sweep-safe.
+    let f = SweepSafe::new(f);
     // SAFETY: the closure captures only Rust state and rooted `JsValue`s; Boa's collector
     // treats a value held outside its heap as a root, so nothing it captures can be freed
     // while it is alive. (A cycle through it is never collected; the engine cuts those.)
     let native = unsafe {
         NativeFunction::from_closure(move |this, args, context| {
-            cx::enter(context, || f(this, args))
+            cx::enter(context, || (*f)(this, args))
         })
     };
     FunctionObjectBuilder::new(context.realm(), native)
@@ -324,7 +334,7 @@ impl JsHost {
         }
         let callback = runtime.callback().clone();
         let schema = runtime.schema().cloned().unwrap_or_default();
-        let handle = JsObject::from_proto_and_data(None, RuntimeHandle(runtime.clone()));
+        let handle = JsObject::from_proto_and_data(None, RuntimeHandle::new(runtime.clone()));
         let face = self
             .helper("makeRuntime", &[handle.into(), callback, schema])
             .unwrap_or_default();
@@ -388,7 +398,7 @@ impl Host for JsHost {
         if let Some(face) = fiber.face() {
             return face;
         }
-        let handle = JsObject::from_proto_and_data(None, FiberHandle(fiber.clone()));
+        let handle = JsObject::from_proto_and_data(None, FiberHandle::new(fiber.clone()));
         let face = self
             .helper("makeFiber", &[handle.into()])
             .unwrap_or_default();
@@ -406,7 +416,7 @@ impl Host for JsHost {
         if let Some(face) = effect.face() {
             return face;
         }
-        let handle = JsObject::from_proto_and_data(None, EffectHandle(effect.clone()));
+        let handle = JsObject::from_proto_and_data(None, EffectHandle::new(effect.clone()));
         let face = self
             .helper("makeEffect", &[handle.into()])
             .unwrap_or_default();

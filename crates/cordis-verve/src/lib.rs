@@ -14,6 +14,7 @@ mod cx;
 mod host;
 mod ops;
 mod rust;
+mod sweep;
 
 use std::rc::Rc;
 
@@ -99,7 +100,12 @@ fn build(context: &mut Context) -> JsResult<JsValue> {
     install_scheduler();
     let exports = cx::enter(context, || -> JsResult<JsValue> {
         let (factory, ops, keys) = cx::with(|context| -> JsResult<_> {
-            let factory = context.eval(Source::from_bytes(CORDIS_JS))?;
+            // `CORDIS_VERVE_JS` names a replacement for the embedded face: for working on it
+            // without rebuilding.
+            let source = std::env::var_os("CORDIS_VERVE_JS")
+                .and_then(|path| std::fs::read_to_string(path).ok());
+            let source = source.as_deref().unwrap_or(CORDIS_JS);
+            let factory = context.eval(Source::from_bytes(source))?;
             let ops = ops::ops(context)?;
             let keys = JsObject::with_null_proto();
             keys.set(js_string!("handle"), statics.handle.clone(), false, context)?;

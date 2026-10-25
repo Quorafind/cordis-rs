@@ -118,12 +118,19 @@ impl<H: Host> Clone for Runtime<H> {
     }
 }
 
+impl<H: Host> Drop for RuntimeInner<H> {
+    fn drop(&mut self) {
+        crate::stats::add(&crate::stats::RUNTIMES, -1);
+    }
+}
+
 pub(crate) struct RuntimeInner<H: Host> {
     pub(crate) key: H::PluginKey,
     pub(crate) name: Option<String>,
     pub(crate) callback: H::Value,
     pub(crate) schema: Option<H::Value>,
     pub(crate) fibers: DisposableList<Fiber<H>>,
+    pub(crate) deleted: Cell<bool>,
     /// The host's face, made once.
     pub(crate) face: RefCell<Option<H::Value>>,
 }
@@ -155,8 +162,17 @@ impl<H: Host> Runtime<H> {
         self.inner.face.borrow().clone()
     }
 
+    /// Caches its face — only while it is registered: a forgotten runtime's face would hold
+    /// it (through its handle) for good.
     pub fn set_face(&self, face: H::Value) {
-        *self.inner.face.borrow_mut() = Some(face);
+        if !self.inner.deleted.get() {
+            *self.inner.face.borrow_mut() = Some(face);
+        }
+    }
+
+    /// Whether the registry has forgotten it.
+    pub fn is_deleted(&self) -> bool {
+        self.inner.deleted.get()
     }
 
     pub fn ptr_eq(&self, other: &Self) -> bool {
@@ -280,8 +296,14 @@ impl<H: Host> Root<H> {
     pub fn delete_runtime(&self, key: &H::PluginKey) -> Option<Runtime<H>> {
         let runtime = self.inner.runtimes.borrow_mut().shift_remove(key)?;
         // Its face holds it (through its handle); a forgotten runtime keeps neither.
+        runtime.inner.deleted.set(true);
         runtime.inner.face.borrow_mut().take();
-        for fiber in runtime.fibers() {
+        // A fiber leaves its runtime's list only while the runtime is registered (as upstream
+        // has it), so a forgotten runtime lets go of them itself — fiber and runtime hold each
+        // other, which only a collector would have undone.
+        let fibers = runtime.fibers();
+        runtime.inner.fibers.clear();
+        for fiber in fibers {
             if let Some(dispose) = fiber.dispose_effect() {
                 if let Err(error) = dispose.dispose() {
                     fiber.report(&error);

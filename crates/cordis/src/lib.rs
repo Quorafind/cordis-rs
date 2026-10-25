@@ -14,6 +14,7 @@ pub mod list;
 pub mod native;
 pub mod reflect;
 pub mod root;
+pub mod stats;
 pub mod task;
 
 pub use effect::{Disposer, Effect, Pending};

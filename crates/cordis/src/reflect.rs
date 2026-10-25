@@ -323,6 +323,7 @@ impl<H: Host> Root<H> {
         let runtime = match existing {
             Some(runtime) => runtime,
             None => {
+                crate::stats::add(&crate::stats::RUNTIMES, 1);
                 let runtime = Runtime {
                     inner: Rc::new(RuntimeInner {
                         key: spec.key.clone(),
@@ -330,6 +331,7 @@ impl<H: Host> Root<H> {
                         callback: spec.callback,
                         schema: spec.schema,
                         fibers: Default::default(),
+                        deleted: Default::default(),
                         face: Default::default(),
                     }),
                 };

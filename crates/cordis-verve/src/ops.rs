@@ -158,7 +158,7 @@ fn create_root(_: &JsValue, args: &[JsValue]) -> JsResult<JsValue> {
     *host.root_ctx.borrow_mut() = Some(ctx.clone());
     let root = Root::new(host);
     root.set_ctx(ctx);
-    Ok(JsObject::from_proto_and_data(None, RootHandle(root)).into())
+    Ok(JsObject::from_proto_and_data(None, RootHandle::new(root)).into())
 }
 
 fn root_fiber(_: &JsValue, args: &[JsValue]) -> JsResult<JsValue> {

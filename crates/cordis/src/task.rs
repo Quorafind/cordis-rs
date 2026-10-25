@@ -341,6 +341,11 @@ thread_local! {
     static KEEP: RefCell<HashMap<u64, Rc<dyn Runnable>>> = RefCell::new(HashMap::new());
 }
 
+/// How many spawned tasks have not finished.
+pub fn pending() -> usize {
+    KEEP.try_with(|keep| keep.borrow().len()).unwrap_or(0)
+}
+
 /// Called by a finished task: it no longer needs keeping.
 fn release(id: u64) {
     let _released = KEEP.with(|keep| keep.borrow_mut().remove(&id));

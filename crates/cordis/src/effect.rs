@@ -107,8 +107,15 @@ pub(crate) struct EffectInner<H: Host> {
     pub(crate) face: RefCell<Option<H::Value>>,
 }
 
+impl<H: Host> Drop for EffectInner<H> {
+    fn drop(&mut self) {
+        crate::stats::add(&crate::stats::EFFECTS, -1);
+    }
+}
+
 impl<H: Host> Effect<H> {
     pub(crate) fn new(label: String, root: Weak<RootInner<H>>) -> Self {
+        crate::stats::add(&crate::stats::EFFECTS, 1);
         Self {
             inner: Rc::new(EffectInner {
                 label,
