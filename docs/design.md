@@ -153,13 +153,21 @@ collected. The rule that keeps this bounded:
   JS wrapper keeps plain copies of what JS can still read from a dead fiber (`ctx`, `parent`,
   `runtime`, `inject`).
 - **native → native** upward edges are weak (fiber → root), downward strong (root → registry
-  → fibers).
+  → fibers). Where upstream leaves a cycle for the collector (a deleted runtime still listing
+  its fibers; a runtime face re-made after deletion), the engine cuts it explicitly.
+- **Drops during a sweep are deferred.** Boa skips the reference-count decrement of a `Gc`
+  dropped while it frees objects; a `JsValue` owned by a freed handle or by a freed native
+  closure's captures would therefore stay rooted forever. Both are wrapped in `SweepSafe`
+  (`cordis-verve/src/sweep.rs`), which parks such contents and drops them at the next native
+  call. See `verve-needs.md` §1.
 
-So unloading a plugin releases its code and closures — what hot reload needs. What is not
-collected is a **root abandoned with live fibers**: the root holds its root context, which
-holds the root. Rebon keeps one realm per process; tests that make many roots leak a few
-kilobytes each. A GC-traced store (keeping engine-held JS values inside a traced `JsObject`)
-would remove that, and is noted as follow-up.
+So unloading a plugin releases its code and closures — what hot reload needs;
+`cordis-verve/tests/release.rs` checks it six ways. What is not collected is a **root
+abandoned with live fibers**: the root holds its root context, which holds the root (about one
+fiber and the ~20 built-in effects of the root, per root). Rebon keeps one realm per process;
+tests that make many roots leak that much each. A GC-traced store (keeping engine-held JS values
+inside a traced `JsObject`) would remove it, and is noted as follow-up. `cordis::stats::stats()`
+reports live fibers, effects, runtimes and pending tasks.
 
 Every native entry (an op, a promise reaction, a drain job) records the `&mut boa::Context` it
 was given in a thread-local stack for the duration of the call, which is how `JsHost` reaches
@@ -189,3 +197,23 @@ the native `cordis` module, which does not import them at all.
 Not in v1: rewriting stack traces (`composeError` keeps errors as thrown; upstream only
 splices stack lines), the loader/include/hmr packages, and a GC-traced store for abandoned
 roots.
+
+## Known differences from the bundle
+
+None is observed by the upstream specs, the differential scenarios or compose-runtime's suites.
+
+- **Views, not live objects.** `ctx.events._hooks`, `ctx.reflect.store`, `fiber.store`,
+  `fiber._store`, `fiber._hooks` and `fiber._disposables` are snapshots, and
+  `ctx.reflect.props` a read-only live view: mutating them changes nothing. Upstream's are the
+  internal tables themselves.
+- **`reflect.notify(names, filter)`** ignores a custom `filter` (the default — same isolation
+  key — always applies). `EventsService.register` (an internal helper) is not provided.
+- **Effect metadata** (`wrapper[Context.effect]`, `getEffects()`) is built fresh on each read:
+  equal, not identical, across reads.
+- **Prepending a fiber-local `internal/update` listener** works; upstream calls the missing
+  `DisposableList.unshift` and throws.
+- **Microtask interleaving.** Engine continuations run in drain microtasks queued when a task
+  is woken, so the number of ticks between two engine steps can differ from upstream's `await`
+  chains. Every ordering the differential scenarios observe (including state at single-tick
+  steps) is identical; an observer counting ticks inside a load could see a difference.
+- **Stack traces** are the engine's as thrown (see above); messages, names and codes match.

@@ -4,7 +4,13 @@
 // and at microtask steps, errors by name and message, disposal order — and prints one
 // `TRACE <name> <json>` line. The two runs must print the same lines.
 import test from 'node:test';
+import * as cordis from 'cordis';
 import { Context, FiberState, Service } from 'cordis';
+
+test('the module exports the same names', () => {
+  const names = Object.keys(cordis).filter((name) => name !== 'default').sort();
+  console.log(`TRACE exports ${JSON.stringify(names)}`);
+});
 
 const sleep = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 const tick = () => Promise.resolve();
