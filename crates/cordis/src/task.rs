@@ -80,19 +80,21 @@ pub fn set_remote_notifier(notifier: Option<Arc<dyn Fn() + Send + Sync>>) {
 }
 
 fn schedule_local(id: u64) {
-    let was_empty = READY.with(|ready| {
-        let mut ready = ready.borrow_mut();
-        let was_empty = ready.is_empty();
-        ready.push_back(id);
-        was_empty
-    });
-    let _ = was_empty;
+    // A wake during thread teardown has nowhere to go, and nothing left to run it.
+    let queued = READY.try_with(|ready| ready.borrow_mut().push_back(id));
+    if queued.is_err() {
+        return;
+    }
     request_drain();
 }
 
 /// Asks the scheduler for a drain, unless one is already arranged.
 pub fn request_drain() {
-    if DRAIN_PENDING.with(Cell::get) || !READY.with(|ready| !ready.borrow().is_empty()) {
+    let pending = DRAIN_PENDING.try_with(Cell::get).unwrap_or(true);
+    let ready = READY
+        .try_with(|ready| !ready.borrow().is_empty())
+        .unwrap_or(false);
+    if pending || !ready {
         return;
     }
     let scheduler = SCHEDULER.with(|slot| slot.borrow().clone());
@@ -346,7 +348,9 @@ fn release(id: u64) {
 
 impl<T> Drop for Inner<T> {
     fn drop(&mut self) {
-        TASKS.with(|tasks| {
+        // Also runs while the thread's locals are torn down (a pending task kept by `KEEP`),
+        // when `TASKS` may already be gone.
+        let _ = TASKS.try_with(|tasks| {
             if let Ok(mut tasks) = tasks.try_borrow_mut() {
                 tasks.remove(&self.id);
             }
