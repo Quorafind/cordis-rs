@@ -442,6 +442,9 @@ dependencies = [
 [[package]]
 name = "cordis"
 version = "0.1.0"
+dependencies = [
+ "indexmap",
+]
 
 [[package]]
 name = "cordis-harness"
