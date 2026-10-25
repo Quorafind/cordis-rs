@@ -1,0 +1,48 @@
+[workspace]
+resolver = "2"
+members = ["crates/cordis", "crates/cordis-verve", "crates/cordis-harness"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+rust-version = "1.95"
+
+[workspace.dependencies]
+cordis = { path = "crates/cordis" }
+cordis-verve = { path = "crates/cordis-verve" }
+# Verve by path, beside this repository. Its npm installer is an HTTP client this
+# workspace never uses, so the default feature is left out.
+verve = { path = "../verve", default-features = false }
+boa_engine = { version = "=0.22.0", default-features = false, features = ["annex-b"] }
+boa_gc = "=0.22.0"
+
+# Boa as Verve carries it, and as Verve's own root `Cargo.toml` patches it: all seven
+# crates from the same tree, never a mix of patched and unpatched engine/GC crates.
+[patch.crates-io]
+boa_ast = { path = "../verve/boa/core/ast" }
+boa_engine = { path = "../verve/boa/core/engine" }
+boa_gc = { path = "../verve/boa/core/gc" }
+boa_interner = { path = "../verve/boa/core/interner" }
+boa_macros = { path = "../verve/boa/core/macros" }
+boa_parser = { path = "../verve/boa/core/parser" }
+boa_string = { path = "../verve/boa/core/string" }
+
+# The interpreter unoptimised is several times slower, in tests as anywhere.
+[profile.dev.package.boa_engine]
+opt-level = 3
+[profile.dev.package.boa_parser]
+opt-level = 3
+[profile.dev.package.boa_ast]
+opt-level = 3
+[profile.dev.package.boa_gc]
+opt-level = 3
+[profile.dev.package.boa_interner]
+opt-level = 3
+[profile.dev.package.boa_string]
+opt-level = 3
+[profile.dev.package.regress]
+opt-level = 3
+[profile.dev.package.wasmi]
+opt-level = 3

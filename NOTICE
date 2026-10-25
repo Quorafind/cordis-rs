@@ -1,0 +1,28 @@
+cordis-rs
+=========
+
+This repository is a Rust implementation of Cordis, the meta-framework at the
+core of Koishi: https://github.com/cordiverse/cordis
+
+It ports Cordis's semantics and public JavaScript API as of cordis@4.0.0-rc.8
+(tag v4.0.0-rc.8, commit f46ae95), and its test suite.
+
+Cordis is MIT licensed:
+
+    Copyright (c) 2021-present Shigma
+
+The following material is Cordis's own, carried here under its MIT license:
+
+  - conformance/upstream/*.mjs — packages/core/tests/*.ts of cordis@4.0.0-rc.8,
+    with TypeScript types stripped by tools/port-specs.cjs (and one decorator
+    applied by hand, since Boa has no decorator syntax).
+  - conformance/node_modules/cordis — the published cordis@4.0.0-rc.8
+    lib/index.js, byte for byte, the reference the differential tests run
+    against. Its LICENSE file is beside it.
+  - conformance/node_modules/cosmokit and conformance/node_modules/schemastery —
+    the builds Rebon vendors, with their LICENSE files beside them
+    (cosmokit and schemastery are also Shigma's, MIT).
+
+The JavaScript face of the native core (crates/cordis-verve/js/) reproduces the
+object model of Cordis's `Context`, `Service`, traceable proxies and `Logger`,
+following Cordis's sources, and is likewise derived from Cordis under MIT.

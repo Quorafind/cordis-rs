@@ -1,0 +1,17 @@
+[package]
+name = "cordis-harness"
+description = "Runs JavaScript test files on Verve with `node:test` and `vitest` stand-ins, against the vendored or the native Cordis."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "cordis-run"
+path = "src/main.rs"
+
+[dependencies]
+cordis-verve.workspace = true
+verve.workspace = true
+boa_engine.workspace = true

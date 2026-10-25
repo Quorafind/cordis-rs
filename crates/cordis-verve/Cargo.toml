@@ -1,0 +1,12 @@
+[package]
+name = "cordis-verve"
+description = "The native Cordis core as Verve's `cordis` module: JavaScript plugins in the same registry as Rust ones."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cordis.workspace = true
+verve.workspace = true

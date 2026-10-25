@@ -1,0 +1,4 @@
+# Boa's interpreter recurses deeply; Verve asks for 16 MB stacks on the threads that run it,
+# and test threads get the same.
+[env]
+RUST_MIN_STACK = "16777216"

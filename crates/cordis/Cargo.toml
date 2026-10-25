@@ -1,0 +1,10 @@
+[package]
+name = "cordis"
+description = "Cordis, the meta-framework, in Rust: contexts, plugins, fibers, effects, events and services."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
