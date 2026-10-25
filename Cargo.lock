@@ -178,6 +178,7 @@ dependencies = [
 [[package]]
 name = "boa_ast"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "bitflags",
  "boa_interner",
@@ -192,6 +193,7 @@ dependencies = [
 [[package]]
 name = "boa_engine"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "aligned-vec",
  "arrayvec",
@@ -241,6 +243,7 @@ dependencies = [
 [[package]]
 name = "boa_gc"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "arrayvec",
  "boa_macros",
@@ -252,6 +255,7 @@ dependencies = [
 [[package]]
 name = "boa_interner"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "boa_gc",
  "boa_macros",
@@ -266,6 +270,7 @@ dependencies = [
 [[package]]
 name = "boa_macros"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "cfg-if",
  "cow-utils",
@@ -278,6 +283,7 @@ dependencies = [
 [[package]]
 name = "boa_parser"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "bitflags",
  "boa_ast",
@@ -294,6 +300,7 @@ dependencies = [
 [[package]]
 name = "boa_string"
 version = "0.22.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "fast-float2",
  "itoa",
@@ -2422,6 +2429,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 [[package]]
 name = "small_btree"
 version = "0.1.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "arrayvec",
 ]
@@ -2560,6 +2568,7 @@ dependencies = [
 [[package]]
 name = "tag_ptr"
 version = "0.1.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 
 [[package]]
 name = "tap"
@@ -2850,6 +2859,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "verve"
 version = "0.1.0"
+source = "git+https://github.com/Quorafind/verve.git?branch=main#6d00ee2f6eb6d7ba443decbfa7d48e7882b053fd"
 dependencies = [
  "aes",
  "boa_engine",

@@ -44,7 +44,7 @@ target/debug/cordis-run --native conformance/upstream/fiber.spec.mjs
 ```
 
 The ignored test reads Rebon's `runtimes/node` (`CORDIS_REBON_RUNTIMES`, default
-`../reboncode-verve/runtimes/node`) into a temporary copy; the checkout is never written.
+`../reboncode/runtimes/node`) into a temporary copy; the checkout is never written.
 
 ## License
 

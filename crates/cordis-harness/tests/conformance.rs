@@ -124,13 +124,13 @@ pub const RESOLVE_PATCH: [(&str, &str); 2] = [
 /// `runtimes/node` (the checkout is only read) whose vendored bundle is replaced by a module
 /// that throws — so nothing can quietly fall back to it. Each test must end as it ends on the
 /// vendored bundle. Ignored by default: it needs a Rebon checkout, `CORDIS_REBON_RUNTIMES`
-/// (default `../reboncode-verve/runtimes/node` beside this repository).
+/// (default `../reboncode/runtimes/node` beside this repository).
 #[test]
 #[ignore]
 fn compose_runtime_suites_on_the_native_module() {
     let source = std::env::var_os("CORDIS_REBON_RUNTIMES")
         .map(PathBuf::from)
-        .unwrap_or_else(|| conformance().join("../../reboncode-verve/runtimes/node"));
+        .unwrap_or_else(|| conformance().join("../../reboncode/runtimes/node"));
     assert!(
         source.join("compose-runtime").is_dir(),
         "no runtimes at {}",
