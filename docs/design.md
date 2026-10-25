@@ -217,3 +217,11 @@ None is observed by the upstream specs, the differential scenarios or compose-ru
   chains. Every ordering the differential scenarios observe (including state at single-tick
   steps) is identical; an observer counting ticks inside a load could see a difference.
 - **Stack traces** are the engine's as thrown (see above); messages, names and codes match.
+
+## Constraints
+
+- **One driving runtime per thread.** The ready queue and the recorded-context stack are
+  thread-local, and a drain polls whatever is ready in the context of the job running it. A
+  thread may run several cordis-enabled Verve runtimes one after another (the harness does), or
+  one per thread (Rebon's isolates), but must not interleave two.
+- `install` must run on the thread that drives the runtime.

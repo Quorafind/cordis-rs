@@ -40,6 +40,8 @@ let promise = self.runtime.load_esm(&entry, &source)?;
 
 `install` runs on the isolate's thread (it must: the engine's tasks and the runtime are
 thread-local), defines `cordis` as a builtin module (so also `node:cordis`), and is idempotent.
+One isolate per thread is what Rebon already does, and what the engine requires: a thread must
+not interleave two cordis-enabled runtimes (`design.md`, Constraints).
 
 ## 3. Module resolution
 
