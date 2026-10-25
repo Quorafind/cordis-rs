@@ -193,11 +193,11 @@ fn run_file(options: &Options, file: &std::path::Path) -> usize {
     }
     runtime.define_builtin("test", node_test);
     runtime.define_builtin("vitest", vitest);
-    if options.native {
-        if let Err(error) = cordis_verve::install(&mut runtime) {
-            eprintln!("cordis-run: the native cordis failed to install: {error}");
-            return 101;
-        }
+    if options.native
+        && let Err(error) = cordis_verve::install(&mut runtime)
+    {
+        eprintln!("cordis-run: the native cordis failed to install: {error}");
+        return 101;
     }
     let deadline = Instant::now() + options.timeout;
     let url = url_of(&file);

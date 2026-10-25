@@ -302,7 +302,7 @@ pub(crate) fn await_js(value: JsValue) -> LocalBoxFuture<Result<JsValue, JsError
 
 /// A task as a JavaScript promise.
 pub(crate) fn promise_of(task: Task<Result<JsValue, JsError>>) -> JsValue {
-    let (promise, resolvers) = cx::with(|context| JsPromise::new_pending(context));
+    let (promise, resolvers) = cx::with(JsPromise::new_pending);
     let value: JsValue = promise.into();
     cordis::task::spawn(async move {
         let outcome = task.await;
@@ -562,10 +562,10 @@ impl Host for JsHost {
         let symbol = JsSymbol::new(Some(JsString::from(name))).expect("a symbol");
         if let Some(root) = self.root_ctx.borrow().clone() {
             cx::with(|context| {
-                if let Ok(map) = root.get(self.statics.isolate.clone(), context) {
-                    if let Some(map) = map.as_object() {
-                        let _ = map.set(JsString::from(name), symbol.clone(), false, context);
-                    }
+                if let Ok(map) = root.get(self.statics.isolate.clone(), context)
+                    && let Some(map) = map.as_object()
+                {
+                    let _ = map.set(JsString::from(name), symbol.clone(), false, context);
                 }
             });
         }

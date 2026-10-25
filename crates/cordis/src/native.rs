@@ -546,10 +546,10 @@ impl Host for NativeHost {
     fn isolate_key(&self, ctx: &Context, name: &str) -> Option<Key> {
         let mut node = Some(ctx);
         while let Some(current) = node {
-            if let Some((n, key)) = &current.node.isolate {
-                if n == name {
-                    return Some(key.clone());
-                }
+            if let Some((n, key)) = &current.node.isolate
+                && n == name
+            {
+                return Some(key.clone());
             }
             node = current.node.parent.as_ref();
         }
@@ -690,10 +690,10 @@ impl Context {
         let mut configs = Vec::new();
         let mut node = Some(self);
         while let Some(current) = node {
-            if let Some((n, config)) = &current.node.intercept {
-                if n == name {
-                    configs.insert(0, config.clone());
-                }
+            if let Some((n, config)) = &current.node.intercept
+                && n == name
+            {
+                configs.insert(0, config.clone());
             }
             node = current.node.parent.as_ref();
         }

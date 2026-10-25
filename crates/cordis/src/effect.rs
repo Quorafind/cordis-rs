@@ -205,7 +205,8 @@ impl<H: Host> Effect<H> {
         self.inner.epoch.set(false);
         self.inner.face.borrow_mut().take();
         let execution = self.inner.task.borrow().clone();
-        let result = match execution {
+
+        match execution {
             Some(execution) => {
                 let effect = self.clone();
                 let scope = self.root().and_then(|root| root.host.scope());
@@ -218,8 +219,7 @@ impl<H: Host> Effect<H> {
                 })))
             }
             None => self.run_disposables(),
-        };
-        result
+        }
     }
 
     /// `disposeAsync`, what `await effect` resolves to: disposes without waiting for the

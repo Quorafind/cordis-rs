@@ -166,17 +166,15 @@ fn root_fiber(_: &JsValue, args: &[JsValue]) -> JsResult<JsValue> {
     let fiber = root.fiber();
     let had_face = fiber.face().is_some();
     let face = root.host().fiber_value(&fiber);
-    if !had_face {
-        if let Some(ctx) = root.ctx() {
-            let helpers = root.host().helpers.clone();
-            cx::with(|context| -> JsResult<()> {
-                let f = helpers.get(js_string!("rootFiberCtx"), context)?;
-                if let Some(f) = f.as_callable() {
-                    f.call(&JsValue::undefined(), &[face.clone(), ctx.into()], context)?;
-                }
-                Ok(())
-            })?;
-        }
+    if !had_face && let Some(ctx) = root.ctx() {
+        let helpers = root.host().helpers.clone();
+        cx::with(|context| -> JsResult<()> {
+            let f = helpers.get(js_string!("rootFiberCtx"), context)?;
+            if let Some(f) = f.as_callable() {
+                f.call(&JsValue::undefined(), &[face.clone(), ctx.into()], context)?;
+            }
+            Ok(())
+        })?;
     }
     Ok(face)
 }
@@ -907,7 +905,7 @@ pub(crate) fn ops(context: &mut Context) -> JsResult<JsObject> {
     let object = JsObject::with_null_proto();
     for (name, length, op) in OPS {
         let op = *op;
-        let function = make_fn(context, name, *length, move |this, args| op(this, args));
+        let function = make_fn(context, name, *length, op);
         object.set(JsString::from(*name), function, false, context)?;
     }
     Ok(object)

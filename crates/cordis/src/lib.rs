@@ -6,6 +6,10 @@
 //! language can plug its values into ([`Host`]). [`native`] is the host for Rust itself;
 //! `cordis-verve` is the one for JavaScript on Verve.
 
+// Callbacks generic over a host's value and error types are spelled out where they are used;
+// naming each `Rc<dyn Fn(&H::Value, …) -> Result<…>>` would only move the noise.
+#![allow(clippy::type_complexity)]
+
 pub mod effect;
 pub mod events;
 pub mod fiber;

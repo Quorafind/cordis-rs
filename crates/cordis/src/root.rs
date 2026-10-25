@@ -304,10 +304,10 @@ impl<H: Host> Root<H> {
         let fibers = runtime.fibers();
         runtime.inner.fibers.clear();
         for fiber in fibers {
-            if let Some(dispose) = fiber.dispose_effect() {
-                if let Err(error) = dispose.dispose() {
-                    fiber.report(&error);
-                }
+            if let Some(dispose) = fiber.dispose_effect()
+                && let Err(error) = dispose.dispose()
+            {
+                fiber.report(&error);
             }
         }
         Some(runtime)
