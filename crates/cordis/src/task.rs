@@ -50,7 +50,7 @@ thread_local! {
     static READY: RefCell<VecDeque<u64>> = const { RefCell::new(VecDeque::new()) };
     static NEXT_ID: Cell<u64> = const { Cell::new(1) };
     static DRAIN_PENDING: Cell<bool> = const { Cell::new(false) };
-    static SCHEDULER: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
+    static SCHEDULER: RefCell<Option<Rc<dyn Fn() -> bool>>> = const { RefCell::new(None) };
 }
 
 type Notifier = Arc<dyn Fn() + Send + Sync>;
@@ -63,9 +63,10 @@ fn remote() -> &'static Mutex<HashMap<ThreadId, (Vec<u64>, Option<Notifier>)>> {
 }
 
 /// Installs the hook asked to arrange a [`run_ready`] soon — a microtask, a loop turn — when
-/// this thread's ready queue becomes non-empty. Without one, the queue waits for an explicit
-/// [`run_ready`] or [`run_until_stalled`].
-pub fn set_scheduler(scheduler: Option<Rc<dyn Fn()>>) {
+/// this thread's ready queue becomes non-empty. It answers whether it did; one that could not
+/// (no engine to queue a job on just then) is asked again at the next wake. Without one, the
+/// queue waits for an explicit [`run_ready`] or [`run_until_stalled`].
+pub fn set_scheduler(scheduler: Option<Rc<dyn Fn() -> bool>>) {
     SCHEDULER.with(|slot| *slot.borrow_mut() = scheduler);
 }
 
@@ -85,13 +86,27 @@ fn schedule_local(id: u64) {
         ready.push_back(id);
         was_empty
     });
-    if was_empty && !DRAIN_PENDING.with(Cell::get) {
-        let scheduler = SCHEDULER.with(|slot| slot.borrow().clone());
-        if let Some(scheduler) = scheduler {
-            DRAIN_PENDING.with(|pending| pending.set(true));
-            scheduler();
+    let _ = was_empty;
+    request_drain();
+}
+
+/// Asks the scheduler for a drain, unless one is already arranged.
+pub fn request_drain() {
+    if DRAIN_PENDING.with(Cell::get) || !READY.with(|ready| !ready.borrow().is_empty()) {
+        return;
+    }
+    let scheduler = SCHEDULER.with(|slot| slot.borrow().clone());
+    if let Some(scheduler) = scheduler {
+        DRAIN_PENDING.with(|pending| pending.set(true));
+        if !scheduler() {
+            DRAIN_PENDING.with(|pending| pending.set(false));
         }
     }
+}
+
+/// Forgets a drain that was arranged but will never run (its engine is gone).
+pub fn reset_drain() {
+    DRAIN_PENDING.with(|pending| pending.set(false));
 }
 
 struct TaskWaker {
@@ -480,7 +495,10 @@ mod tests {
     fn the_scheduler_is_asked_once_per_empty_queue() {
         let asked = Rc::new(Cell::new(0));
         let a = asked.clone();
-        set_scheduler(Some(Rc::new(move || a.set(a.get() + 1))));
+        set_scheduler(Some(Rc::new(move || {
+            a.set(a.get() + 1);
+            true
+        })));
         spawn(async {
             yield_now().await;
         });

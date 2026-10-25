@@ -165,10 +165,12 @@ pub trait Host: Sized + 'static {
     // ─── Plugins, effects, services ──────────────────────────────────────────────────────
 
     /// Runs a plugin's body for `ctx`: `new callback(ctx, config)` (with its init hooks and
-    /// `[Service.init]`) for a constructor, `callback(ctx, config)` otherwise. Answers what
-    /// it returned, for [`Host::classify`].
+    /// `[Service.init]`) for a constructor, `runtime.callback(ctx, config)` otherwise — a
+    /// method call, so `this` is the runtime. Answers what it returned, for
+    /// [`Host::classify`].
     fn execute_plugin(
         &self,
+        runtime: &crate::root::Runtime<Self>,
         callback: &Self::Value,
         ctx: &Self::Ctx,
         config: &Self::Value,

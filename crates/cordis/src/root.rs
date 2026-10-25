@@ -256,6 +256,11 @@ impl<H: Host> Root<H> {
         uid
     }
 
+    /// `registry.counter`: takes the next uid, as reading the getter does.
+    pub fn next_counter(&self) -> u32 {
+        self.next_uid()
+    }
+
     /// `registry.size`.
     pub fn runtime_count(&self) -> usize {
         self.inner.runtimes.borrow().len()
@@ -274,6 +279,8 @@ impl<H: Host> Root<H> {
     /// `registry.delete(plugin)`: forgets the runtime and disposes every fiber it has.
     pub fn delete_runtime(&self, key: &H::PluginKey) -> Option<Runtime<H>> {
         let runtime = self.inner.runtimes.borrow_mut().shift_remove(key)?;
+        // Its face holds it (through its handle); a forgotten runtime keeps neither.
+        runtime.inner.face.borrow_mut().take();
         for fiber in runtime.fibers() {
             if let Some(dispose) = fiber.dispose_effect() {
                 if let Err(error) = dispose.dispose() {

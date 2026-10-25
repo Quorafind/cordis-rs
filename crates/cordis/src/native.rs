@@ -568,6 +568,7 @@ impl Host for NativeHost {
     }
     fn execute_plugin(
         &self,
+        _runtime: &crate::root::Runtime<Self>,
         callback: &Value,
         ctx: &Context,
         config: &Value,

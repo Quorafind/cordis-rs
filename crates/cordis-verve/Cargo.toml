@@ -10,3 +10,5 @@ rust-version.workspace = true
 [dependencies]
 cordis.workspace = true
 verve.workspace = true
+boa_engine.workspace = true
+boa_gc.workspace = true

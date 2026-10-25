@@ -291,7 +291,12 @@ impl<H: Host> Fiber<H> {
     pub fn name(&self) -> String {
         let mut fiber = Some(self.clone());
         while let Some(current) = fiber {
-            if let Some(name) = current.runtime().and_then(|r| r.name().map(str::to_owned)) {
+            // `fiber.runtime?.name` is read for truthiness: an anonymous function's `""` is
+            // no name.
+            if let Some(name) = current
+                .runtime()
+                .and_then(|r| r.name().filter(|n| !n.is_empty()).map(str::to_owned))
+            {
                 return name;
             }
             if current.is_root() {
@@ -571,7 +576,7 @@ impl<H: Host> Fiber<H> {
                 };
                 let host = root.host();
                 let config = fiber.config().unwrap_or_else(|| host.undefined());
-                let value = host.execute_plugin(runtime.callback(), &ctx, &config)?;
+                let value = host.execute_plugin(&runtime, runtime.callback(), &ctx, &config)?;
                 Ok(host.classify(value))
             })
         };
