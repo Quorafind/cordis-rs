@@ -105,10 +105,26 @@ fn the_native_module_behaves_as_the_vendored_bundle() {
 
 // ─── The acceptance milestone ────────────────────────────────────────────────────────────
 
-/// compose-runtime's suites with `payload/vendor/cordis/index.js` replaced by a re-export of
-/// the native module, in a copy of `runtimes/node` (the checkout is only read). Each test
-/// must end as it ends on the vendored bundle. Ignored by default: it needs a Rebon checkout,
-/// `CORDIS_REBON_RUNTIMES` (default `../reboncode-verve/runtimes/node` beside this repository).
+/// The integration `docs/integration.md` proposes, applied to compose-runtime's
+/// `src/resolve.mjs`: `cordis` and `@deepseek-ai/cordis` resolve to the host's builtin when
+/// the host defines one (Verve with `cordis_verve::install`), and to the vendored bundle
+/// otherwise (Node, in CI).
+pub const RESOLVE_PATCH: [(&str, &str); 2] = [
+    (
+        "import { registerHooks } from 'node:module';",
+        "import { isBuiltin, registerHooks } from 'node:module';",
+    ),
+    (
+        "    resolve(specifier, context, next) {\n",
+        "    resolve(specifier, context, next) {\n      // The native Cordis, when the host defines it (cordis-rs on Verve).\n      if ((specifier === 'cordis' || specifier === '@deepseek-ai/cordis') && isBuiltin('cordis')) {\n        return { url: 'node:cordis', shortCircuit: true };\n      }\n",
+    ),
+];
+
+/// compose-runtime's suites on the native module, through [`RESOLVE_PATCH`], in a copy of
+/// `runtimes/node` (the checkout is only read) whose vendored bundle is replaced by a module
+/// that throws — so nothing can quietly fall back to it. Each test must end as it ends on the
+/// vendored bundle. Ignored by default: it needs a Rebon checkout, `CORDIS_REBON_RUNTIMES`
+/// (default `../reboncode-verve/runtimes/node` beside this repository).
 #[test]
 #[ignore]
 fn compose_runtime_suites_on_the_native_module() {
@@ -124,9 +140,18 @@ fn compose_runtime_suites_on_the_native_module() {
     let _ = std::fs::remove_dir_all(&scratch);
     copy_tree(&source, &scratch.join("runtimes/node"));
     let compose = scratch.join("runtimes/node/compose-runtime");
+    let resolve = compose.join("src/resolve.mjs");
+    let mut text = std::fs::read_to_string(&resolve)
+        .unwrap()
+        .replace("\r\n", "\n");
+    for (from, to) in RESOLVE_PATCH {
+        assert!(text.contains(from), "resolve.mjs has changed: no {from:?}");
+        text = text.replacen(from, to, 1);
+    }
+    std::fs::write(&resolve, text).unwrap();
     std::fs::write(
         compose.join("payload/vendor/cordis/index.js"),
-        "// Substituted by cordis-rs: the native Cordis, a builtin of the host.\nexport * from 'node:cordis';\n",
+        "throw new Error('the vendored cordis was loaded');\n",
     )
     .unwrap();
     // The bundle's run gets a copy of its own too: nothing runs inside the checkout.
